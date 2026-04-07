@@ -1,34 +1,66 @@
-
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
     <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const gltfModel = document.querySelector('a-gltf-model');
-        gltfModel.addEventListener("click", event => {
-          console.log("GLTF clicked");
-          document.getElementById('debug').innerHTML = 'clicked';
-        });
-      });
+AFRAME.registerComponent('click-handler', {
+  init: function () {
+    this.paused = false; // Keep track of the state
+
+    this.el.addEventListener("click", event => {
+      console.log("Printer clicked");
+      
+      // Get the animation component from the element
+      // Since it's a default animation, the component name is 'animation'
+      const animationSystem = this.el.components.animation;
+
+      if (!this.paused) {
+        // If it's playing, pause it
+        animationSystem.pause();
+        this.paused = true;
+        document.getElementById('debug').innerHTML = 'Animation: PAUSED';
+      } else {
+        // If it's paused, play it
+        animationSystem.play();
+        this.paused = false;
+        document.getElementById('debug').innerHTML = 'Animation: PLAYING';
+      }
+    });
+  }
+});
     </script>
   </head>
   <body>
-    <div id="debug" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; z-index: 1000;"></div>
-    <a-scene mindar-image="imageTargetSrc: ./assets/Card.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" filterMinCF="0.1" filterBeta="10">
+    <div id="debug" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px;">
+      Point camera at target...
+    </div>
+
+    <a-scene 
+      mindar-image="imageTargetSrc: ./assets/Card.mind; filterMinCF: 0.001; filterBeta: 10;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
+      
       <a-assets>
-	   <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
-	   <a-asset-item id="avatarModel" src="./assets/Printer/Printer.gltf"></a-asset-item>
+        <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
+        <a-asset-item id="avatarModel" src="./assets/Printer/Printer.gltf"></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="near: 10; far: 10000; objects: .clickable"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="near: 0.1; far: 10000; objects: .clickable"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <!-- <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-        <a-gltf-model rotation="0 180 0" position="0 -0.6 0" scale="0.5 0.5 0.5" src="#avatarModel" class="clickable"
-          animation="property: position; to: 0 -0.4 0; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"
-        >
+        <a-gltf-model 
+          rotation="0 180 0" 
+          position="0 -0.6 0" 
+          scale="0.5 0.5 0.5" 
+          src="#avatarModel" 
+          class="clickable"
+          click-handler
+          animation="property: position; to: 0 -0.4 0; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate">
+        </a-gltf-model>
       </a-entity>
     </a-scene>
   </body>
