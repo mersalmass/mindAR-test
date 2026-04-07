@@ -3,50 +3,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.2.0/dist/aframe-extras.min.js"></script>
     
     <script>
-AFRAME.registerComponent('click-handler', {
-  init: function () {
-    this.paused = false; // Keep track of the state
+      AFRAME.registerComponent('animation-cycler', {
+        init: function () {
+          this.animationNames = [];
+          this.currentIndex = 0;
 
-    this.el.addEventListener("click", event => {
-      console.log("Printer clicked");
-      
-      // Get the animation component from the element
-      // Since it's a default animation, the component name is 'animation'
-      const animationSystem = this.el.components.animation;
+          // Wait for model to load to see its internal animations
+          this.el.addEventListener('model-loaded', () => {
+            const obj = this.el.getObject3D('mesh');
+            if (obj && obj.animations && obj.animations.length > 0) {
+              this.animationNames = obj.animations.map(anim => anim.name);
+              console.log("Found animations:", this.animationNames);
+              this.updateAnim();
+            }
+          });
 
-      if (!this.paused) {
-        // If it's playing, pause it
-        animationSystem.pause();
-        this.paused = true;
-        document.getElementById('debug').innerHTML = 'Animation: PAUSED';
-      } else {
-        // If it's paused, play it
-        animationSystem.play();
-        this.paused = false;
-        document.getElementById('debug').innerHTML = 'Animation: PLAYING';
-      }
-    });
-  }
-});
+          // Use mousedown for faster response in AR
+          this.el.addEventListener("mousedown", () => {
+            if (this.animationNames.length > 0) {
+              this.currentIndex = (this.currentIndex + 1) % this.animationNames.length;
+              this.updateAnim();
+            }
+          });
+        },
+
+        updateAnim: function () {
+          const name = this.animationNames[this.currentIndex];
+          this.el.setAttribute('animation-mixer', {
+            clip: name,
+            loop: 'repeat',
+            crossFadeDuration: 0.4
+          });
+          document.getElementById('debug').innerHTML = 'Playing: ' + name;
+        }
+      });
     </script>
   </head>
+
   <body>
-    <div id="debug" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px;">
+    <div id="debug" style="position: absolute; top: 10px; left: 10px; color: white; font-size: 18px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 5px; pointer-events: none;">
       Point camera at target...
     </div>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./assets/Card.mind; filterMinCF: 0.001; filterBeta: 10;" 
+      mindar-image="imageTargetSrc: ./assets/Card.mind;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
       device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
-        <a-asset-item id="avatarModel" src="./assets/Printer/Printer.gltf"></a-asset-item>
+        <a-asset-item id="avatarModel" src="./assets/Desk/scene.gltf" crossorigin="anonymous"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="near: 0.1; far: 10000; objects: .clickable"></a-camera>
@@ -58,8 +68,7 @@ AFRAME.registerComponent('click-handler', {
           scale="0.5 0.5 0.5" 
           src="#avatarModel" 
           class="clickable"
-          click-handler
-          animation="property: position; to: 0 -0.4 0; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate">
+          animation-cycler>
         </a-gltf-model>
       </a-entity>
     </a-scene>
