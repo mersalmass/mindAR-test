@@ -34,7 +34,8 @@
           const name = this.animationNames[this.currentIndex];
           this.el.setAttribute('animation-mixer', {
             clip: name,
-            loop: 'repeat',
+            loop: 'once',
+            clampWhenFinished: true,
             crossFadeDuration: 0.4
           });
           document.getElementById('debug').innerHTML = 'Playing: ' + name;
